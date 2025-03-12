@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD de Usuarios</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Gestión de Usuarios</h1>
+
+    <div class="formulario">
+        <input type="text" id="nombre" placeholder="Ingrese el nombre">
+        <input type="number" id="edad" placeholder="Ingrese la edad">
+        <button onclick="crearUsuario()">Agregar Usuario</button>
+    </div>
+
+    <h2>Lista de Usuarios</h2>
+    <ul id="listaUsuarios"></ul>
+
+    <script>
+        async function obtenerUsuarios() {
+            let respuesta = await fetch("/usuarios");
+            let usuarios = await respuesta.json();
+            let lista = document.getElementById("listaUsuarios");
+            lista.innerHTML = "";
+
+            usuarios.forEach(usuario => {
+                let li = document.createElement("li");
+                li.innerHTML = `
+                    <span>${usuario.nombre} - </span>
+                    <input type="number" id="edad-${usuario.nombre}" value="${usuario.edad}" disabled>
+                    <button onclick="habilitarEdicion('${usuario.nombre}')">✏️ Editar</button>
+                    <button onclick="guardarCambios('${usuario.nombre}')">💾 Guardar</button>
+                    <button onclick="eliminarUsuario('${usuario.nombre}')">❌ Eliminar</button>
+                `;
+                lista.appendChild(li);
+            });
+        }
+
+        async function crearUsuario() {
+            let nombre = document.getElementById("nombre").value;
+            let edad = document.getElementById("edad").value;
+            await fetch("/usuarios", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nombre, edad })
+            });
+            obtenerUsuarios();
+        }
+
+        function habilitarEdicion(nombre) {
+            let inputEdad = document.getElementById(`edad-${nombre}`);
+            inputEdad.removeAttribute("disabled");
+            inputEdad.focus();
+        }
+
+        async function guardarCambios(nombre) {
+            let nuevaEdad = document.getElementById(`edad-${nombre}`).value;
+            await fetch(`/usuarios/${nombre}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ edad: nuevaEdad })
+            });
+            obtenerUsuarios();
+        }
+
+        async function eliminarUsuario(nombre) {
+            await fetch(`/usuarios/${nombre}`, { method: "DELETE" });
+            obtenerUsuarios();
+        }
+
+        obtenerUsuarios();
+    </script>
+</body>
+</html>
